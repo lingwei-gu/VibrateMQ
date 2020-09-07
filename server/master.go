@@ -1,22 +1,30 @@
 package main
 
 import (
+	context "context"
 	"log"
 	"net"
 	"net/rpc"
+
+	grpc "google.golang.org/grpc"
 )
 
-// HelloService ...
-type HelloService struct{}
+// HelloServiceImpl ...
+type HelloServiceImpl struct{}
 
 // Hello ...
-func (p *HelloService) Hello(request string, reply *string) error {
-	*reply = "hello:" + request
-	return nil
+func (p *HelloServiceImpl) Hello(
+	ctx context.Context, args *String,
+) (*String, error) {
+	reply := &String{Value: "hello:" + args.GetValue()}
+	return reply, nil
 }
 
 func main() {
-	rpc.RegisterName("HelloService", new(HelloService))
+	grpcServer := grpc.NewServer()
+	RegisterHelloServiceServer(grpcServer, new(HelloServiceImpl))
+
+	rpc.RegisterName("HelloService", new(HelloServiceImpl))
 	server, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		log.Fatalln(err)
@@ -24,12 +32,7 @@ func main() {
 	defer server.Close()
 
 	for {
-		conn, err := server.Accept()
-		if err != nil {
-			log.Fatal("Accept error:", err)
-			continue
-		}
-		rpc.ServeConn(conn)
+		grpcServer.Serve(server)
 	}
 
 }

@@ -1,23 +1,27 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"net/rpc"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
-	client, err := rpc.Dial("tcp", "localhost:8080")
+	conn, err := grpc.Dial("localhost:1234", grpc.WithInsecure())
 	if err != nil {
-		log.Fatal("dialing:", err)
+		log.Fatal(err)
 	}
+	defer conn.Close()
 
-	var reply string
+	client := NewHelloServiceClient(conn)
+
 	for i := 0; i < 1000000; i++ {
-		err = client.Call("HelloService.Hello", "hello", &reply)
+		reply, err := client.Hello(context.Background(), &String{Value: "hello"})
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(reply, i)
+		fmt.Println(reply.GetValue())
 	}
 }
