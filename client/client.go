@@ -1,35 +1,40 @@
 package main
 
 import (
+	context "context"
+	"fmt"
 	"log"
 	"net"
-	"net/rpc"
+
+	"VibrateMQ/handler"
+
+	grpc "google.golang.org/grpc"
 )
 
-// ReceiveService ...
-type ReceiveService struct{}
+// HelloServiceImpl ...
+type HelloServiceImpl struct{}
 
-// Receive ...
-func (p *ReceiveService) Receive(request string, reply *string) error {
-	*reply = "Receive:" + request
-	return nil
+// Hello ...
+func (p *HelloServiceImpl) Hello(
+	ctx context.Context, args *handler.String,
+) (*handler.String, error) {
+	reply := &handler.String{Value: "Success" + args.GetValue()}
+	fmt.Println("Success: " + args.GetValue())
+	return reply, nil
 }
 
 func main() {
-	rpc.RegisterName("ReceiveService", new(ReceiveService))
-	server, err := net.Listen("tcp", ":8080")
+	grpcServer := grpc.NewServer()
+	handler.RegisterHelloServiceServer(grpcServer, new(HelloServiceImpl))
+
+	server, err := net.Listen("tcp", ":8888")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer server.Close()
 
 	for {
-		conn, err := server.Accept()
-		if err != nil {
-			log.Fatal("Accept error:", err)
-			continue
-		}
-		rpc.ServeConn(conn)
+		grpcServer.Serve(server)
 	}
 
 }
