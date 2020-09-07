@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package handler;
 
-option go_package = "VibrateMQ/handlers_proto";
+option go_package = "https://github.com/lingwei-gu/VibrateMQ/tree/master/handlers_proto";
 
 message String {
     string value = 1;
