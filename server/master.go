@@ -2,9 +2,11 @@ package main
 
 import (
 	context "context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	cnt "VibrateMQ/connection"
 	"VibrateMQ/handler"
@@ -67,9 +69,59 @@ func startServer(port string) {
 	}
 }
 
+func updateServerRecords() {
+	// connect to zk
+	conn, err := cnt.GetConnect()
+	if err != nil {
+		fmt.Printf(" connect zk error: %s ", err)
+	}
+	defer conn.Close()
+
+	// retrieve server list
+	serverList, err := cnt.GetServerList(conn)
+	if err != nil {
+		fmt.Printf(" get server list error: %s \n", err)
+		return
+	}
+
+	// count how many servers it has
+	count := len(serverList)
+	if count == 0 {
+		err = errors.New("server list is empty")
+		return
+	}
+
+	// update the data in znode
+	_, err = cnt.SetServerNum(conn, count)
+	if err != nil {
+		fmt.Printf(" set znode server number error: %s \n", err)
+		return
+	}
+}
+
+func retrieveServerRecords() {
+	// connect to zk
+	conn, err := cnt.GetConnect()
+	if err != nil {
+		fmt.Printf(" connect zk error: %s ", err)
+	}
+	defer conn.Close()
+	data, _, err := cnt.GetServerNum(conn)
+
+	fmt.Printf("Number of servers: %s \n", string(data))
+}
+
 func main() {
 	go startServer("8083")
 	go startServer("8081")
-	startServer("8082")
-	fmt.Printf("success")
+	go startServer("8082")
+
+	time.Sleep(1)
+
+	updateServerRecords()
+	retrieveServerRecords()
+	hold := make(chan bool, 1)
+	<-hold
+
+	fmt.Printf("Terminated")
 }
