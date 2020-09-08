@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	cnt "VibrateMQ/connection"
 	"VibrateMQ/handler"
 
 	grpc "google.golang.org/grpc"
@@ -38,18 +39,37 @@ func dial(args string) {
 	fmt.Println(reply.GetValue())
 }
 
-func main() {
+func startServer(port string) {
 	grpcServer := grpc.NewServer()
 	handler.RegisterHelloServiceServer(grpcServer, new(HelloServiceImpl))
 
-	server, err := net.Listen("tcp", ":8080")
+	server, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer server.Close()
 
+	// connect to zk
+	conn, err := cnt.GetConnect()
+	if err != nil {
+		fmt.Printf(" connect zk error: %s ", err)
+	}
+	defer conn.Close()
+
+	// register znode
+	err = cnt.RegistServer(conn, port)
+	if err != nil {
+		fmt.Printf(" regist node error: %s ", err)
+	}
+
 	for {
 		grpcServer.Serve(server)
 	}
+}
 
+func main() {
+	go startServer("8083")
+	go startServer("8081")
+	startServer("8082")
+	fmt.Printf("success")
 }
