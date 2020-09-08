@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"time"
+	"strconv"
+	"sync"
 
 	cnt "VibrateMQ/connection"
 	"VibrateMQ/handler"
@@ -41,7 +42,7 @@ func dial(args string) {
 	fmt.Println(reply.GetValue())
 }
 
-func startServer(port string) {
+func startServer(wg *sync.WaitGroup, port string) {
 	grpcServer := grpc.NewServer()
 	handler.RegisterHelloServiceServer(grpcServer, new(HelloServiceImpl))
 
@@ -63,6 +64,8 @@ func startServer(port string) {
 	if err != nil {
 		fmt.Printf(" regist node error: %s ", err)
 	}
+
+	wg.Done()
 
 	for {
 		grpcServer.Serve(server)
@@ -112,11 +115,13 @@ func retrieveServerRecords() {
 }
 
 func main() {
-	go startServer("8083")
-	go startServer("8081")
-	go startServer("8082")
+	var wg sync.WaitGroup
+	for i := 8081; i <= 8083; i++ {
+		wg.Add(1)
+		go startServer(&wg, strconv.Itoa(i))
+	}
 
-	time.Sleep(1)
+	wg.Wait()
 
 	updateServerRecords()
 	retrieveServerRecords()
