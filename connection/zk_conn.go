@@ -1,41 +1,14 @@
 package connect
 
 import (
-	"errors"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"time"
 
 	"github.com/samuel/go-zookeeper/zk"
 )
 
-// GetServerHost ...
-func GetServerHost() (host string, err error) {
-	conn, err := GetConnect()
-	if err != nil {
-		fmt.Printf(" connect zk error: %s \n ", err)
-		return
-	}
-	defer conn.Close()
-	serverList, err := GetServerList(conn)
-	if err != nil {
-		fmt.Printf(" get server list error: %s \n", err)
-		return
-	}
-
-	count := len(serverList)
-	if count == 0 {
-		err = errors.New("server list is empty")
-		return
-	}
-
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	host = serverList[r.Intn(3)]
-	return
-}
-
-// GetConnect ...
+// GetConnect connects to zk server
 func GetConnect() (conn *zk.Conn, err error) {
 	zkList := []string{"localhost:2181"}
 	conn, _, err = zk.Connect(zkList, 10*time.Second)
@@ -45,34 +18,40 @@ func GetConnect() (conn *zk.Conn, err error) {
 	return
 }
 
-// RegistServer ...
-func RegistServer(conn *zk.Conn, host string) (err error) {
-	_, err = conn.Create("/go_servers/"+host, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+// RegistServer registers servers
+func RegistServer(conn *zk.Conn, host string, path string) (err error) {
+	_, err = conn.Create(path+"/"+host, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
 	return
 }
 
-// GetServerList ...
-func GetServerList(conn *zk.Conn) (list []string, err error) {
-	list, _, err = conn.Children("/go_servers")
+// RegistNode registers znode by path
+func RegistNode(conn *zk.Conn, path string) (err error) {
+	_, err = conn.Create(path, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
 	return
 }
 
-// SetServerNum ...
-func SetServerNum(conn *zk.Conn, serverNum int) (stat *zk.Stat, err error) {
-	_, stat, err = conn.Get("/go_servers")
+// GetServerList gets all the children servers under the path
+func GetServerList(conn *zk.Conn, path string) (list []string, err error) {
+	list, _, err = conn.Children(path)
+	return
+}
+
+// SetServerNum sets the number of its children servers
+func SetServerNum(conn *zk.Conn, serverNum int, path string) (stat *zk.Stat, err error) {
+	_, stat, err = conn.Get(path)
 	if err != nil {
 		fmt.Println(err)
 	}
-	stat, err = conn.Set("/go_servers", []byte(strconv.Itoa(serverNum)), stat.Version)
+	stat, err = conn.Set(path, []byte(strconv.Itoa(serverNum)), stat.Version)
 	if err != nil {
 		fmt.Println(err)
 	}
 	return
 }
 
-// GetServerNum ...
-func GetServerNum(conn *zk.Conn) (data []byte, stat *zk.Stat, err error) {
-	data, stat, err = conn.Get("/go_servers")
+// GetServerNum gets the number of its children servers
+func GetServerNum(conn *zk.Conn, path string) (data []byte, stat *zk.Stat, err error) {
+	data, stat, err = conn.Get(path)
 	if err != nil {
 		fmt.Println(err)
 	}

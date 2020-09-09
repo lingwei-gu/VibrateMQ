@@ -6,20 +6,14 @@ import (
 	"log"
 	"strconv"
 
-	cnt "VibrateMQ/connection"
 	"VibrateMQ/handler"
 
 	"google.golang.org/grpc"
 )
 
 func main() {
-	serverHost, err := cnt.GetServerHost()
-	if err != nil {
-		fmt.Printf("get server host fail: %s \n", err)
-		return
-	}
-	fmt.Println("connect host: " + serverHost)
-	conn, err := grpc.Dial("localhost:"+serverHost, grpc.WithInsecure())
+	port := "8081"
+	conn, err := grpc.Dial("localhost:"+port, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
