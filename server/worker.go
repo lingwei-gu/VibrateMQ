@@ -83,9 +83,10 @@ func main() {
 	wg.Wait()
 
 	util.UpdateRecords(cnt.ServerPath, util.GetServerLen(cnt.ServerPath))
-	serverNum := util.RetrieveRecords(cnt.ServerPath)
 
-	fmt.Printf("%d", serverNum)
+	// serverNum := util.RetrieveRecords(cnt.ServerPath)
+
+	// fmt.Printf("%d", serverNum)
 	hold := make(chan bool, 1)
 	<-hold
 

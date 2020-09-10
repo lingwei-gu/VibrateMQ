@@ -44,6 +44,22 @@ func GetServerHost(index int) (host string, err error) {
 	return
 }
 
+// GetAllHosts returns a list of port numbers
+func GetAllHosts() (serverList []string) {
+	conn, err := cnt.GetConnect()
+	if err != nil {
+		fmt.Printf(" connect zk error: %s \n ", err)
+		return
+	}
+	defer conn.Close()
+	serverList, err = cnt.GetServerList(conn, cnt.ServerPath)
+	if err != nil {
+		fmt.Printf(" get server list error: %s \n", err)
+		return
+	}
+	return
+}
+
 // GetServerLen counts how many children are in the current path
 func GetServerLen(path string) (count int) {
 	// connect to zk
